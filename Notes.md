@@ -28,6 +28,7 @@ High level overview of rendering a model:
     - Select a queue family
     - Create logical device and get queue
     - Create a swapchain
+    - Get swapchain images and image views
 
     (The steps above can be automated by `vk-bootstrap`)
 
@@ -50,4 +51,14 @@ Submitting a command buffer to a queue means it starts processing on the GPU sid
 
 Vulkan gives explicit control over the rendering architecture. This means that frame can be rendered offline (headless mode); over the network; or on a screen.
 
+Swapchain image views are conceptually similar to Render Target Views on DirectX 12.
 
+The general flow to execute commands is:
+
+    - Allocate a `VkCommandBuffer` from a `VkCommandPool`
+    - Record commands into the command buffer
+    - Submit the command buffer into a `VkQueue` through `VkQueueSubmit`
+
+Multiple threads can record commands into a single queue but only one thread should submit them to a queue. Also, each thread should use its own copy of a command allocator and command buffer.
+
+The graphics pipeline is the sequence of operations that take the vertices and textures of the meshes all the way to the pixels in the render targets.
