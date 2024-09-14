@@ -9,13 +9,27 @@ const uint32_t width = 640, height = 480;
 // Throws std::runtime_error on nullptr or falsy values
 void check(const auto& ptr, const std::string& msg)
 {
+#ifdef NDEBUG
+    (void)ptr;
+    (void)msg;
+#else
     if (!ptr) {
         spdlog::error(msg);
         throw std::runtime_error(msg);
     }
+#endif
 }
 
+#ifdef _WIN32
+#ifdef NDEBUG
+#include <windows.h>
+int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
+#else
 int main()
+#endif
+#else
+int main()
+#endif
 {
     vkb::InstanceBuilder builder {};
     auto inst_ret = builder.set_app_name("HelloTriangle").request_validation_layers().use_default_debug_messenger().build();
