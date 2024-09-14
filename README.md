@@ -10,7 +10,7 @@ Before building the project, ensure the following dependencies are installed:
 
 - CMake: [Download here](https://cmake.org/download/)
 
-- Additional dependencies: Run `setup\setup_deps.bat` or `setup/setup_deps.sh` depending on your OS.
+- Additional dependencies: Run `git submodule update --init --recursive`.
 
 ### Windows
 
