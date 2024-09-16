@@ -41,6 +41,20 @@ Vulkan does not have the concept of a "default framebuffer", hence it requires a
 
 An image view describes how to access the image and which part of the image to access.
 
+All GPU commands in Vulkan are sent through command buffers which get executed on a queue.
+
+Command buffers are allocated from a command pool, which should be unique per thread. Also, multiple threads can record commands, but only one thread can submit it.
+
+A GPU can execute multiple queues in parallel. Commands in a queue are guaranteed to start in submission order, but can end out of order.
+
+`VkFence` is used for CPU - GPU synchronization. If this is set, we can know from the CPU if the GPU has finished these operations.
+
+For GPU - GPU synchronization, `VkSemaphore` is used. Semaphores allow defining order of operations on GPU commands.
+
+GPUs store images in different formats, and image layout transitions are required to have the image in a valid state before rendering.
+
+Request image -> Reset command buffer -> Start rendering commands -> End rendering commands -> Submit to graphics queue -> Wait for fence -> Present -> Reset fence.
+
 The graphics pipeline is a collection of programmable and fixed-function stages.
 
 Programmable stages include:
