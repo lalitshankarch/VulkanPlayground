@@ -34,7 +34,7 @@ int main()
     vkb::InstanceBuilder builder{};
 #ifdef NDEBUG
     auto inst_ret =
-        builder.set_app_name("HelloTriangle").request_validation_layers().build();
+        builder.set_app_name("HelloTriangle").build();
 #else
     auto inst_ret = builder.set_app_name("HelloTriangle")
                         .request_validation_layers()
