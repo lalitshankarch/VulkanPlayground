@@ -77,3 +77,15 @@ Shader code in Vulkan is specified in Standard Portable Intermediate Representat
 A clip coordinate is a 4D vector from the vertex shader that is subsequently turned into a normalized device coordinate by dividing the whole vector by its last component. In Vulkan, the NDC Y is flipped, Z ranges from 0 to 1 and X ranges from -1 to 1.
 
 Vulkan allows us to configure fixed function stages to a limited extent with limited dynamic configuration.
+
+`VkViewport` allows us to set the viewport extent, along with depth and other settings. The scissor parameter is like the viewport, except that it discards fragments outside it's bounding rect. Some GPUs allow multiple viewports and scissors.
+
+Vulkan rasterization state allows us to configure the fill mode as well as the cull mode which will remove faces opposite to the direction specified for front faces.
+
+Multisampling takes multiple samples to better determine whether a fragment is in or out of a given boundary and shade accordingly.
+
+Color blending determines how we combine colors in our framebuffer.
+
+The pipeline also takes a depth attachment besides a color attachment that stores the depth value of every fragment. The depth buffer keeps the depth value of all the fragments that happen to be on the top of the color buffer.
+
+A renderpass defines the color and depth attachments.
