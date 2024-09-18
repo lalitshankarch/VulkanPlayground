@@ -382,12 +382,12 @@ private:
     {
         spdlog::info("Destroy swapchain");
 
-        for (auto &frame_buffer : frame_buffers)
+        for (const auto &frame_buffer : frame_buffers)
         {
             vkDestroyFramebuffer(vkb_device.device, frame_buffer, nullptr);
         }
 
-        for (auto &image_view : swapchain_image_views)
+        for (const auto &image_view : swapchain_image_views)
         {
             vkDestroyImageView(vkb_device.device, image_view, nullptr);
         }
@@ -402,7 +402,7 @@ private:
         vkDestroyRenderPass(vkb_device.device, render_pass, nullptr);
         vkDestroyPipelineLayout(vkb_device.device, pipeline_layout, nullptr);
 
-        for (auto &shader_stage_ci : shader_stage_cis)
+        for (const auto &shader_stage_ci : shader_stage_cis)
         {
             vkDestroyShaderModule(vkb_device.device, shader_stage_ci.module, nullptr);
         }
