@@ -42,8 +42,8 @@ namespace lve
         pipelineConfig.layout = pipelineLayout;
         lvePipeline = std::make_unique<LvePipeline>(
             lveDevice,
-            "src/lve/shaders/simple_vert.spv",
-            "src/lve/shaders/simple_frag.spv",
+            "shaders/simple_vert.spv",
+            "shaders/simple_frag.spv",
             pipelineConfig);
     }
 

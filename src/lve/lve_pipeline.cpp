@@ -126,7 +126,6 @@ namespace lve
 
         // Polygons drawn filled with backface culling
         configInfo.rasterizationSci.cullMode = VK_CULL_MODE_BACK_BIT;
-        configInfo.rasterizationSci.frontFace = VK_FRONT_FACE_CLOCKWISE;
         configInfo.rasterizationSci.lineWidth = 1.0f;
         configInfo.rasterizationSci.polygonMode = VK_POLYGON_MODE_FILL;
         configInfo.rasterizationSci.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
