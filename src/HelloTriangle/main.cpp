@@ -350,10 +350,10 @@ private:
             glfwPollEvents();
 
             // Wait until all commands have executed on graphics queue
-            vkWaitForFences(vkb_device.device, 1, &render_fence, VK_TRUE, 1000000);
+            vkWaitForFences(vkb_device.device, 1, &render_fence, VK_TRUE, 1000000000);
             vkResetFences(vkb_device.device, 1, &swapchain_fence);
             vkAcquireNextImageKHR(
-                vkb_device.device, vkb_swapchain.swapchain, 1000000, VK_NULL_HANDLE, swapchain_fence, &img_idx);
+                vkb_device.device, vkb_swapchain.swapchain, 1000000000, VK_NULL_HANDLE, swapchain_fence, &img_idx);
 
             // Record commands in advance
             vkResetCommandBuffer(command_buffers[img_idx], 0);
@@ -366,7 +366,7 @@ private:
             vkEndCommandBuffer(command_buffers[img_idx]);
 
             // Wait until next image is acquired
-            vkWaitForFences(vkb_device.device, 1, &swapchain_fence, VK_TRUE, 1000000);
+            vkWaitForFences(vkb_device.device, 1, &swapchain_fence, VK_TRUE, 1000000000);
             vkResetFences(vkb_device.device, 1, &render_fence);
             submit_info.pCommandBuffers = &command_buffers[img_idx];
             vkQueueSubmit(graphics_queue, 1, &submit_info, render_fence);
