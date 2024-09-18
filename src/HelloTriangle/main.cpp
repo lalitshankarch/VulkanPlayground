@@ -363,8 +363,8 @@ private:
             vkResetCommandBuffer(command_buffers[img_idx], 0);
             vkBeginCommandBuffer(command_buffers[img_idx], &command_buffer_bi);
             render_pass_bi.framebuffer = frame_buffers[img_idx];
-            vkCmdBeginRenderPass(command_buffers[img_idx], &render_pass_bi, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdBindPipeline(command_buffers[img_idx], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
+            vkCmdBeginRenderPass(command_buffers[img_idx], &render_pass_bi, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdDraw(command_buffers[img_idx], 3, 1, 0, 0);
             vkCmdEndRenderPass(command_buffers[img_idx]);
             vkEndCommandBuffer(command_buffers[img_idx]);
