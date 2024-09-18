@@ -95,8 +95,12 @@ private:
     {
         spdlog::info("Create swapchain");
 
+        VkSurfaceFormatKHR surf_format{
+            .format = VK_FORMAT_R8G8B8_UNORM,
+        };
+
         vkb::SwapchainBuilder vkb_swapchain_buildr{vkb_device};
-        auto swapchain_ret = vkb_swapchain_buildr.build();
+        auto swapchain_ret = vkb_swapchain_buildr.set_desired_format(surf_format).build();
         check(swapchain_ret, "Vulkan: Failed to create swapchain");
         vkb_swapchain = swapchain_ret.value();
 
