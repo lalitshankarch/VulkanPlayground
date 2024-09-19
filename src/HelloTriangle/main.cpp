@@ -100,7 +100,10 @@ private:
         };
 
         vkb::SwapchainBuilder vkb_swapchain_buildr{vkb_device};
-        auto swapchain_ret = vkb_swapchain_buildr.set_desired_format(surf_format).build();
+        auto swapchain_ret = vkb_swapchain_buildr
+                                 .set_desired_format(surf_format)
+                                 .set_desired_min_image_count(3)
+                                 .build();
         check(swapchain_ret, "Vulkan: Failed to create swapchain");
         vkb_swapchain = swapchain_ret.value();
 
@@ -327,7 +330,7 @@ private:
 
         VkCommandBufferBeginInfo command_buffer_bi{
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
+            .flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT};
 
         VkClearValue clear_value{.color = VkClearColorValue{0.0f, 0.0f, 0.0f, 1.0f}};
 
@@ -349,6 +352,19 @@ private:
             .swapchainCount = 1,
             .pSwapchains = &vkb_swapchain.swapchain};
 
+        // Record commands in advance
+        for (int i = 0; i < frame_buffers.size(); i++)
+        {
+            vkResetCommandBuffer(command_buffers[i], 0);
+            vkBeginCommandBuffer(command_buffers[i], &command_buffer_bi);
+            render_pass_bi.framebuffer = frame_buffers[i];
+            vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
+            vkCmdBeginRenderPass(command_buffers[i], &render_pass_bi, VK_SUBPASS_CONTENTS_INLINE);
+            vkCmdDraw(command_buffers[i], 3, 1, 0, 0);
+            vkCmdEndRenderPass(command_buffers[i]);
+            vkEndCommandBuffer(command_buffers[i]);
+        }
+
         while (!glfwWindowShouldClose(window))
         {
             glfwPollEvents();
@@ -358,16 +374,6 @@ private:
             vkResetFences(vkb_device.device, 1, &swapchain_fence);
             vkAcquireNextImageKHR(
                 vkb_device.device, vkb_swapchain.swapchain, 1000000000, VK_NULL_HANDLE, swapchain_fence, &img_idx);
-
-            // Record commands in advance
-            vkResetCommandBuffer(command_buffers[img_idx], 0);
-            vkBeginCommandBuffer(command_buffers[img_idx], &command_buffer_bi);
-            render_pass_bi.framebuffer = frame_buffers[img_idx];
-            vkCmdBindPipeline(command_buffers[img_idx], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
-            vkCmdBeginRenderPass(command_buffers[img_idx], &render_pass_bi, VK_SUBPASS_CONTENTS_INLINE);
-            vkCmdDraw(command_buffers[img_idx], 3, 1, 0, 0);
-            vkCmdEndRenderPass(command_buffers[img_idx]);
-            vkEndCommandBuffer(command_buffers[img_idx]);
 
             // Wait until next image is acquired
             vkWaitForFences(vkb_device.device, 1, &swapchain_fence, VK_TRUE, 1000000000);
@@ -379,6 +385,7 @@ private:
             vkQueuePresentKHR(graphics_queue, &present_info);
         }
 
+        vkDeviceWaitIdle(vkb_device.device);
         vkDestroyFence(vkb_device.device, swapchain_fence, nullptr);
         vkDestroyFence(vkb_device.device, render_fence, nullptr);
     }
@@ -415,7 +422,6 @@ private:
     {
         spdlog::info("Cleanup");
 
-        vkDeviceWaitIdle(vkb_device.device);
         vkDestroyCommandPool(vkb_device.device, command_pool, nullptr);
         destroyGraphicsPipeline();
         destroySwapchain();
