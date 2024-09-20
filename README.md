@@ -1,10 +1,6 @@
 # VulkanPlayground
 
-A repository of Vulkan examples I create while learning Vulkan.
-
-### HelloTriangle
-
-![image](https://github.com/user-attachments/assets/0eadd2d7-abb3-4137-83ca-3c0de0ff4253)
+A collection of Vulkan examples I create on my learning journey!
 
 ## Build
 
@@ -22,8 +18,8 @@ Install Visual Studio 2019 / 2022 with the `Game development with C++` workload 
 
 ### Linux
 
-Install distribution specific C++ development tools. For example:
+Ensure that GCC / Clang C++ toolchain is installled.
 
-- Ubuntu/Debian: `build-essential`
+## Running
 
-- Arch Linux: `base-devel`
+Copy the respective `shaders` directory to the binary location and run.
