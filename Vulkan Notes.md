@@ -89,3 +89,5 @@ Color blending determines how we combine colors in our framebuffer.
 The pipeline also takes a depth attachment besides a color attachment that stores the depth value of every fragment. The depth buffer keeps the depth value of all the fragments that happen to be on the top of the color buffer.
 
 A renderpass defines the color and depth attachments.
+
+In Vulkan we can allocate memory for two purposes: textures and buffers. Buffers are of multiple types, like index or vertex buffers.

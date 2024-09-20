@@ -1,5 +1,7 @@
 #include <fstream>
-#define GLFW_INCLUDE_VULKAN
+#define VMA_IMPLEMENTATION
+#define VMA_VULKAN_VERSION 1000000
+#include "vk_mem_alloc.h"
 #include <GLFW/glfw3.h>
 #ifdef NDEBUG
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_OFF
@@ -18,6 +20,7 @@ public:
     }
 
 private:
+    VmaAllocator allocator{};
     GLFWwindow *window{};
     const uint32_t WIDTH = 640, HEIGHT = 480;
     uint32_t fb_width{}, fb_height{};
@@ -34,6 +37,17 @@ private:
     VkCommandPool command_pool{};
     std::vector<VkCommandBuffer> command_buffers{};
     std::vector<VkFramebuffer> frame_buffers{};
+    struct Buffer
+    {
+        VkBuffer buffer;
+        VmaAllocation allocation;
+    } vertex_buffer{};
+    struct VertexData
+    {
+        float position[3];
+        float color[3];
+    };
+    VertexData vertex_data[3]{};
 
     inline void check(auto val, const char *msg)
     {
@@ -90,6 +104,15 @@ private:
         check(dev_ret, "Vulkan: Failed to create logical device");
         vkb_device = dev_ret.value();
 
+        VmaAllocatorCreateInfo allocator_ci{
+            .physicalDevice = phys_dev_ret.value(),
+            .device = vkb_device.device,
+            .instance = vkb_instance,
+            .vulkanApiVersion = VK_API_VERSION_1_0,
+        };
+
+        check(vmaCreateAllocator(&allocator_ci, &allocator) == VK_SUCCESS, "VMA: Failed to create allocator");
+
         auto graphics_queue_ret = vkb_device.get_queue(vkb::QueueType::graphics);
         check(graphics_queue_ret, "Vulkan: Failed to get graphics queue");
         graphics_queue = graphics_queue_ret.value();
@@ -130,7 +153,7 @@ private:
     }
     VkShaderModule loadShaderModule(const std::string &path)
     {
-        spdlog::info("Load shader module: {}", path);
+        spdlog::info("Load shader: {}", path);
 
         std::vector<char> code = readFile(path);
 
@@ -210,14 +233,38 @@ private:
                 "Vulkan: Failed to create frame buffer");
         }
     }
+
     void createGraphicsPipeline()
     {
         spdlog::info("Create graphics pipeline");
 
         setupShaderStage();
 
+        VkVertexInputBindingDescription vertex_input_bd{
+            .binding = 0,
+            .stride = sizeof VertexData,
+            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX};
+
+        VkVertexInputAttributeDescription vertex_input_ads[2] = {
+            VkVertexInputAttributeDescription{
+                .location = 0,
+                .binding = 0,
+                .format = VK_FORMAT_R32G32B32_SFLOAT,
+                .offset = 0,
+            },
+            VkVertexInputAttributeDescription{
+                .location = 1,
+                .binding = 0,
+                .format = VK_FORMAT_R32G32B32_SFLOAT,
+                .offset = 3 * sizeof(float),
+            }};
+
         VkPipelineVertexInputStateCreateInfo vertex_input_sci{
-            .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+            .vertexBindingDescriptionCount = 1,
+            .pVertexBindingDescriptions = &vertex_input_bd,
+            .vertexAttributeDescriptionCount = 2,
+            .pVertexAttributeDescriptions = vertex_input_ads};
 
         VkViewport viewport{.width = static_cast<float>(fb_width), .height = static_cast<float>(fb_height)};
 
@@ -305,6 +352,36 @@ private:
             vkAllocateCommandBuffers(vkb_device.device, &command_buffer_ai, command_buffers.data()) == VK_SUCCESS,
             "Vulkan: Failed to allocate command buffers");
     }
+
+    void uploadMesh()
+    {
+        spdlog::info("Upload mesh");
+
+        vertex_data[0] = {.position = {0.0f, -0.5f, 0.0f}, .color = {1.0f, 0.0f, 0.0f}};
+        vertex_data[1] = {.position = {-0.5f, 0.5f, 0.0f}, .color = {0.0f, 1.0f, 0.0f}};
+        vertex_data[2] = {.position = {0.5f, 0.5f, 0.0f}, .color = {0.0f, 0.0f, 1.0f}};
+
+        VkBufferCreateInfo buffer_ci{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size = sizeof vertex_data,
+            .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        };
+
+        VmaAllocationCreateInfo allocation_ci{
+            .flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+            .usage = VMA_MEMORY_USAGE_AUTO};
+
+        spdlog::info("VMA: Allocate buffer: {} bytes", sizeof vertex_data);
+        check(vmaCreateBuffer(allocator, &buffer_ci, &allocation_ci, &vertex_buffer.buffer,
+                              &vertex_buffer.allocation, nullptr) == VK_SUCCESS,
+              "VMA: Failed to allocate buffer");
+
+        void *ptr;
+        vmaMapMemory(allocator, vertex_buffer.allocation, &ptr);
+        memcpy(ptr, vertex_data, sizeof vertex_data);
+        vmaUnmapMemory(allocator, vertex_buffer.allocation);
+    }
+
     void init()
     {
         initGLFW();
@@ -312,6 +389,7 @@ private:
         createSwapchain();
         createGraphicsPipeline();
         createCommandBuffers();
+        uploadMesh();
     }
     void renderLoop()
     {
@@ -362,6 +440,8 @@ private:
             vkBeginCommandBuffer(command_buffers[i], &command_buffer_bi);
             render_pass_bi.framebuffer = frame_buffers[i];
             vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
+            VkDeviceSize offset = 0;
+            vkCmdBindVertexBuffers(command_buffers[i], 0, 1, &vertex_buffer.buffer, &offset);
             vkCmdBeginRenderPass(command_buffers[i], &render_pass_bi, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdDraw(command_buffers[i], 3, 1, 0, 0);
             vkCmdEndRenderPass(command_buffers[i]);
@@ -421,13 +501,21 @@ private:
             vkDestroyShaderModule(vkb_device.device, shader_stage_ci.module, nullptr);
         }
     }
+    void discardMesh()
+    {
+        spdlog::info("Discard mesh");
+
+        vmaDestroyBuffer(allocator, vertex_buffer.buffer, vertex_buffer.allocation);
+    }
     void cleanup()
     {
         spdlog::info("Cleanup");
 
+        discardMesh();
         vkDestroyCommandPool(vkb_device.device, command_pool, nullptr);
         destroyGraphicsPipeline();
         destroySwapchain();
+        vmaDestroyAllocator(allocator);
         vkb::destroy_device(vkb_device);
         vkDestroySurfaceKHR(vkb_instance.instance, surface, nullptr);
         vkb::destroy_instance(vkb_instance);
