@@ -47,6 +47,12 @@ private:
         VmaAllocation allocation;
     } data_buffer{};
     tinyobj::attrib_t attrib;
+    struct Vertex
+    {
+        float x, y, z;
+        float r, g, b;
+    };
+    std::vector<Vertex> data{};
     size_t vertex_count{}, vertex_data_size{}, normal_data_size{}, data_size{};
 
     inline void check(auto val, const char *msg)
@@ -242,7 +248,7 @@ private:
 
         VkVertexInputBindingDescription vertex_input_bd{
             .binding = 0,
-            .stride = 3 * sizeof(float),
+            .stride = sizeof(Vertex),
             .inputRate = VK_VERTEX_INPUT_RATE_VERTEX};
 
         VkVertexInputAttributeDescription vertex_input_ads[2] = {
@@ -255,7 +261,7 @@ private:
                 .location = 1,
                 .binding = 0,
                 .format = VK_FORMAT_R32G32B32_SFLOAT,
-                .offset = static_cast<uint32_t>(vertex_data_size)},
+                .offset = static_cast<uint32_t>(offsetof(Vertex, r))},
         };
 
         VkPipelineVertexInputStateCreateInfo vertex_input_sci{
@@ -282,7 +288,7 @@ private:
 
         VkPipelineInputAssemblyStateCreateInfo input_assembly_sci{
             .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP};
+            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST};
 
         VkPipelineRasterizationStateCreateInfo rasterization_sci{
             .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
@@ -369,11 +375,41 @@ private:
             return;
         }
 
-        vertex_count = attrib.vertices.size() / 3;
+        // Loop over shapes (objects)
+        for (size_t s = 0; s < shapes.size(); s++)
+        {
+            // Loop over faces (polygons)
+            size_t index_offset = 0;
+            for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++)
+            {
+                size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
+
+                // Loop over vertices in the face.
+                for (size_t v = 0; v < fv; v++)
+                {
+                    tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
+
+                    tinyobj::real_t vx = attrib.vertices[3 * size_t(idx.vertex_index) + 0];
+                    tinyobj::real_t vy = attrib.vertices[3 * size_t(idx.vertex_index) + 1];
+                    tinyobj::real_t vz = attrib.vertices[3 * size_t(idx.vertex_index) + 2];
+
+                    tinyobj::real_t nx = 0, ny = 0, nz = 0;
+                    if (idx.normal_index >= 0)
+                    {
+                        nx = attrib.normals[3 * size_t(idx.normal_index) + 0];
+                        ny = attrib.normals[3 * size_t(idx.normal_index) + 1];
+                        nz = attrib.normals[3 * size_t(idx.normal_index) + 2];
+                    }
+
+                    data.push_back(Vertex(vx, vy, vz, nx, ny, nz));
+                    vertex_count++;
+                }
+                index_offset += fv;
+            }
+        }
+
         spdlog::info("Vertex count: {}", vertex_count);
-        vertex_data_size = attrib.vertices.size() * sizeof(float);
-        normal_data_size = attrib.normals.size() * sizeof(float);
-        data_size = vertex_data_size + normal_data_size;
+        data_size = vertex_count * sizeof(Vertex);
 
         VkBufferCreateInfo buffer_ci{
             .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -392,10 +428,9 @@ private:
 
         float *ptr;
         vmaMapMemory(allocator, data_buffer.allocation, reinterpret_cast<void **>(&ptr));
-        memcpy(ptr, attrib.vertices.data(), vertex_data_size);
-        ptr += attrib.vertices.size();
-        memcpy(ptr, attrib.normals.data(), normal_data_size);
+        memcpy(ptr, data.data(), data_size);
         vmaUnmapMemory(allocator, data_buffer.allocation);
+        data.erase(data.begin(), data.end());
     }
 
     void init()
