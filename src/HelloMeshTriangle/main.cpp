@@ -9,7 +9,7 @@
 #include <spdlog/spdlog.h>
 #include <VkBootstrap.h>
 
-class HelloTriangleApp
+class HelloMeshTriangle
 {
 public:
     void run()
@@ -69,7 +69,7 @@ private:
 
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        window = glfwCreateWindow(WIDTH, HEIGHT, "HelloTriangle", nullptr, nullptr);
+        window = glfwCreateWindow(WIDTH, HEIGHT, "HelloMeshTriangle", nullptr, nullptr);
 
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
@@ -82,9 +82,9 @@ private:
 
         vkb::InstanceBuilder vkb_inst_buildr{};
 #ifdef NDEBUG
-        auto inst_ret = vkb_inst_buildr.set_app_name("HelloTriangle").build();
+        auto inst_ret = vkb_inst_buildr.set_app_name("HelloMeshTriangle").build();
 #else
-        auto inst_ret = vkb_inst_buildr.set_app_name("HelloTriangle")
+        auto inst_ret = vkb_inst_buildr.set_app_name("HelloMeshTriangle")
                             .enable_validation_layers()
                             .use_default_debug_messenger()
                             .build();
@@ -535,7 +535,7 @@ int main()
 {
     try
     {
-        HelloTriangleApp app{};
+        HelloMeshTriangle app{};
         app.run();
 
         return EXIT_SUCCESS;
