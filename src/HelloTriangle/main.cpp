@@ -168,7 +168,7 @@ private:
             .format = vkb_swapchain.image_format,
             .samples = VK_SAMPLE_COUNT_1_BIT,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
             .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR};
 
         VkAttachmentReference color_attachment_ref{
