@@ -1,11 +1,11 @@
 #include <fstream>
+#include <Windows.h>
 #define VMA_IMPLEMENTATION
 #define VMA_VULKAN_VERSION 1000000
 #include "vk_mem_alloc.h"
 #include <GLFW/glfw3.h>
 #include <VkBootstrap.h>
 #define TINYOBJLOADER_IMPLEMENTATION
-#define TINYOBJLOADER_USE_MAPBOX_EARCUT
 #include <tiny_obj_loader.h>
 
 #ifdef NDEBUG
@@ -45,9 +45,9 @@ private:
     {
         VkBuffer buffer;
         VmaAllocation allocation;
-    } vertex_buffer{};
+    } data_buffer{};
     tinyobj::attrib_t attrib;
-    size_t data_size{}, vertex_count{};
+    size_t vertex_count{}, vertex_data_size{}, normal_data_size{}, data_size{};
 
     inline void check(auto val, const char *msg)
     {
@@ -172,8 +172,6 @@ private:
     }
     void setupShaderStage()
     {
-        spdlog::info("Setup shaders");
-
         VkShaderModule shader_modules[2] = {loadShaderModule("shaders/vert.spv"),
                                             loadShaderModule("shaders/frag.spv")};
 
@@ -247,18 +245,24 @@ private:
             .stride = 3 * sizeof(float),
             .inputRate = VK_VERTEX_INPUT_RATE_VERTEX};
 
-        VkVertexInputAttributeDescription vertex_input_ads[1] = {
+        VkVertexInputAttributeDescription vertex_input_ads[2] = {
             VkVertexInputAttributeDescription{
                 .location = 0,
                 .binding = 0,
                 .format = VK_FORMAT_R32G32B32_SFLOAT,
-                .offset = 0}};
+                .offset = 0},
+            VkVertexInputAttributeDescription{
+                .location = 1,
+                .binding = 0,
+                .format = VK_FORMAT_R32G32B32_SFLOAT,
+                .offset = static_cast<uint32_t>(vertex_data_size)},
+        };
 
         VkPipelineVertexInputStateCreateInfo vertex_input_sci{
             .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
             .vertexBindingDescriptionCount = 1,
             .pVertexBindingDescriptions = &vertex_input_bd,
-            .vertexAttributeDescriptionCount = 1,
+            .vertexAttributeDescriptionCount = 2,
             .pVertexAttributeDescriptions = vertex_input_ads};
 
         VkViewport viewport{.width = static_cast<float>(fb_width), .height = static_cast<float>(fb_height)};
@@ -282,6 +286,7 @@ private:
 
         VkPipelineRasterizationStateCreateInfo rasterization_sci{
             .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+            .cullMode = VK_CULL_MODE_BACK_BIT,
             .lineWidth = 1.0f};
 
         VkPipelineMultisampleStateCreateInfo multisample_sci{
@@ -366,7 +371,9 @@ private:
 
         vertex_count = attrib.vertices.size() / 3;
         spdlog::info("Vertex count: {}", vertex_count);
-        data_size = attrib.vertices.size() * sizeof(float);
+        vertex_data_size = attrib.vertices.size() * sizeof(float);
+        normal_data_size = attrib.normals.size() * sizeof(float);
+        data_size = vertex_data_size + normal_data_size;
 
         VkBufferCreateInfo buffer_ci{
             .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -379,14 +386,16 @@ private:
             .usage = VMA_MEMORY_USAGE_AUTO};
 
         spdlog::info("VMA: Allocate buffer: {} bytes", data_size);
-        check(vmaCreateBuffer(allocator, &buffer_ci, &allocation_ci, &vertex_buffer.buffer,
-                              &vertex_buffer.allocation, nullptr) == VK_SUCCESS,
+        check(vmaCreateBuffer(allocator, &buffer_ci, &allocation_ci, &data_buffer.buffer,
+                              &data_buffer.allocation, nullptr) == VK_SUCCESS,
               "VMA: Failed to allocate buffer");
 
-        void *ptr;
-        vmaMapMemory(allocator, vertex_buffer.allocation, &ptr);
-        memcpy(ptr, attrib.vertices.data(), data_size);
-        vmaUnmapMemory(allocator, vertex_buffer.allocation);
+        float *ptr;
+        vmaMapMemory(allocator, data_buffer.allocation, reinterpret_cast<void **>(&ptr));
+        memcpy(ptr, attrib.vertices.data(), vertex_data_size);
+        ptr += attrib.vertices.size();
+        memcpy(ptr, attrib.normals.data(), normal_data_size);
+        vmaUnmapMemory(allocator, data_buffer.allocation);
     }
 
     void init()
@@ -394,9 +403,9 @@ private:
         initGLFW();
         initVulkan();
         createSwapchain();
+        uploadMesh("Monkey.obj");
         createGraphicsPipeline();
         createCommandBuffers();
-        uploadMesh("Monkey.obj");
     }
     void renderLoop()
     {
@@ -448,7 +457,7 @@ private:
             render_pass_bi.framebuffer = frame_buffers[i];
             vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
             VkDeviceSize offset = 0;
-            vkCmdBindVertexBuffers(command_buffers[i], 0, 1, &vertex_buffer.buffer, &offset);
+            vkCmdBindVertexBuffers(command_buffers[i], 0, 1, &data_buffer.buffer, &offset);
             vkCmdBeginRenderPass(command_buffers[i], &render_pass_bi, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdDraw(command_buffers[i], vertex_count, 1, 0, 0);
             vkCmdEndRenderPass(command_buffers[i]);
@@ -512,7 +521,7 @@ private:
     {
         spdlog::info("Discard mesh");
 
-        vmaDestroyBuffer(allocator, vertex_buffer.buffer, vertex_buffer.allocation);
+        vmaDestroyBuffer(allocator, data_buffer.buffer, data_buffer.allocation);
     }
     void cleanup()
     {
