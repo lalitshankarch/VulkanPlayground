@@ -3,13 +3,10 @@
 #define VMA_VULKAN_VERSION 1000000
 #include "vk_mem_alloc.h"
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 #include <VkBootstrap.h>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
-
-#ifdef NDEBUG
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_OFF
-#endif
 #include <spdlog/spdlog.h>
 
 class HelloMeshLoader
@@ -48,8 +45,8 @@ private:
     tinyobj::attrib_t attrib;
     struct Vertex
     {
-        float x, y, z;
-        float r, g, b;
+        glm::vec3 position;
+        glm::vec3 color;
     };
     size_t vertex_count{}, vertex_data_size{}, normal_data_size{}, data_size{};
 
@@ -259,7 +256,7 @@ private:
                 .location = 1,
                 .binding = 0,
                 .format = VK_FORMAT_R32G32B32_SFLOAT,
-                .offset = static_cast<uint32_t>(offsetof(Vertex, r))},
+                .offset = static_cast<uint32_t>(offsetof(Vertex, color))},
         };
 
         VkPipelineVertexInputStateCreateInfo vertex_input_sci{
@@ -375,7 +372,6 @@ private:
 
         for (size_t s = 0; s < shapes.size(); s++)
         {
-            size_t index_offset = 0;
             for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++)
             {
                 size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
@@ -406,31 +402,30 @@ private:
 
         float *ptr;
         vmaMapMemory(allocator, data_buffer.allocation, reinterpret_cast<void **>(&ptr));
-        int idx = 0;
         for (size_t s = 0; s < shapes.size(); s++)
         {
             size_t index_offset = 0;
             for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++)
             {
                 size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
-
                 for (size_t v = 0; v < fv; v++)
                 {
                     tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
-
                     tinyobj::real_t vx = attrib.vertices[3 * size_t(idx.vertex_index) + 0];
                     tinyobj::real_t vy = attrib.vertices[3 * size_t(idx.vertex_index) + 1];
                     tinyobj::real_t vz = attrib.vertices[3 * size_t(idx.vertex_index) + 2];
-
                     tinyobj::real_t nx = 0, ny = 0, nz = 0;
+
                     if (idx.normal_index >= 0)
                     {
                         nx = attrib.normals[3 * size_t(idx.normal_index) + 0];
                         ny = attrib.normals[3 * size_t(idx.normal_index) + 1];
                         nz = attrib.normals[3 * size_t(idx.normal_index) + 2];
                     }
-                    auto vertex = Vertex(vx, vy, vz, nx, ny, nz);
+
+                    auto vertex = Vertex(glm::vec3(vx, vy, vz), glm::vec3(nx, ny, nz));
                     memcpy(ptr, &vertex, sizeof(Vertex));
+
                     ptr += sizeof(Vertex) / sizeof(float);
                     vertex_count++;
                 }
@@ -445,7 +440,7 @@ private:
         initGLFW();
         initVulkan();
         createSwapchain();
-        uploadMesh("Monkey.obj");
+        uploadMesh("assets/Teapot.obj");
         createGraphicsPipeline();
         createCommandBuffers();
     }
@@ -501,7 +496,7 @@ private:
             VkDeviceSize offset = 0;
             vkCmdBindVertexBuffers(command_buffers[i], 0, 1, &data_buffer.buffer, &offset);
             vkCmdBeginRenderPass(command_buffers[i], &render_pass_bi, VK_SUBPASS_CONTENTS_INLINE);
-            vkCmdDraw(command_buffers[i], vertex_count, 1, 0, 0);
+            vkCmdDraw(command_buffers[i], static_cast<uint32_t>(vertex_count), 1, 0, 0);
             vkCmdEndRenderPass(command_buffers[i]);
             vkEndCommandBuffer(command_buffers[i]);
         }
