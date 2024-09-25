@@ -2,7 +2,7 @@
 
 A collection of Vulkan examples I create on my learning journey!
 
-## Build
+## Building
 
 Before building the project, ensure the following dependencies are installed:
 
@@ -10,7 +10,9 @@ Before building the project, ensure the following dependencies are installed:
 
 - CMake: [Download here](https://cmake.org/download/)
 
-- Additional dependencies: Run `git submodule update --init --recursive`.
+- Additional dependencies: Run `git submodule update --init --recursive --depth 1`
+
+The project can now be built using CMake.
 
 ### Windows
 
@@ -22,4 +24,4 @@ Ensure that Clang 18 C++ toolchain is installled.
 
 ## Running
 
-Copy the respective `shaders` directory to the binary location and run.
+Copy the respective `shaders` and `assets` directory to the binary location and run.
