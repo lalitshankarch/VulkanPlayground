@@ -100,7 +100,7 @@ private:
         spdlog::info("Create swapchain");
 
         VkSurfaceFormatKHR surf_format{
-            .format = VK_FORMAT_R8G8B8_UNORM,
+            .format = VK_FORMAT_B8G8R8A8_UNORM,
         };
 
         vkb::SwapchainBuilder vkb_swapchain_buildr{vkb_device};
