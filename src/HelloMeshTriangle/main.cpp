@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <fstream>
 #define VMA_IMPLEMENTATION
 #define VMA_VULKAN_VERSION 1000000
@@ -242,7 +243,7 @@ private:
 
         VkVertexInputBindingDescription vertex_input_bd{
             .binding = 0,
-            .stride = sizeof VertexData,
+            .stride = sizeof(VertexData),
             .inputRate = VK_VERTEX_INPUT_RATE_VERTEX};
 
         VkVertexInputAttributeDescription vertex_input_ads[2] = {
@@ -363,7 +364,7 @@ private:
 
         VkBufferCreateInfo buffer_ci{
             .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            .size = sizeof vertex_data,
+            .size = sizeof(vertex_data),
             .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
         };
 
@@ -371,14 +372,14 @@ private:
             .flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
             .usage = VMA_MEMORY_USAGE_AUTO};
 
-        spdlog::info("VMA: Allocate buffer: {} bytes", sizeof vertex_data);
+        spdlog::info("VMA: Allocate buffer: {} bytes", sizeof(vertex_data));
         check(vmaCreateBuffer(allocator, &buffer_ci, &allocation_ci, &vertex_buffer.buffer,
                               &vertex_buffer.allocation, nullptr) == VK_SUCCESS,
               "VMA: Failed to allocate buffer");
 
         void *ptr;
         vmaMapMemory(allocator, vertex_buffer.allocation, &ptr);
-        memcpy(ptr, vertex_data, sizeof vertex_data);
+        memcpy(ptr, vertex_data, sizeof(vertex_data));
         vmaUnmapMemory(allocator, vertex_buffer.allocation);
     }
 

@@ -14,11 +14,11 @@ Before building the project, ensure the following dependencies are installed:
 
 ### Windows
 
-Install Visual Studio 2019 / 2022 with the `Game development with C++` workload selected.
+Install Visual Studio 2022 with the `Game development with C++` workload selected.
 
 ### Linux
 
-Ensure that GCC / Clang C++ toolchain is installled.
+Ensure that Clang 18 C++ toolchain is installled.
 
 ## Running
 

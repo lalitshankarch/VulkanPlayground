@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <fstream>
 #define VMA_IMPLEMENTATION
 #define VMA_VULKAN_VERSION 1000000
@@ -48,7 +49,7 @@ private:
         glm::vec3 position;
         glm::vec3 color;
     };
-    size_t vertex_count{}, vertex_data_size{}, normal_data_size{}, data_size{};
+    size_t vertex_count{}, data_size{};
 
     inline void check(auto val, const char *msg)
     {
@@ -466,7 +467,7 @@ private:
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             .flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT};
 
-        VkClearValue clear_value{.color = VkClearColorValue{0.0f, 0.0f, 0.0f, 1.0f}};
+        VkClearValue clear_value{.color = VkClearColorValue{{0.0f, 0.0f, 0.0f, 1.0f}}};
 
         VkRenderPassBeginInfo render_pass_bi{
             .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,

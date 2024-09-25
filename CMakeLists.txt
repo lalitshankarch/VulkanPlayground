@@ -5,11 +5,12 @@ set(CMAKE_CXX_STANDARD 20)
 if (MSVC)
     add_compile_options(/W4)
 else()
-    add_compile_options(-Wall -Wextra -pedantic)
+    add_compile_options(-Wall)
 endif()
 
 find_package(Vulkan REQUIRED)
 
+set(GLFW_BUILD_WAYLAND OFF CACHE BOOL "Disable Wayland support")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/glfw)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/vk-bootstrap)
